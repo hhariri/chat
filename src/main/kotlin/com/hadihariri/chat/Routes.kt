@@ -4,10 +4,6 @@ import kotlinx.html.*
 import kotlinx.html.stream.appendHTML
 import org.wasabifx.wasabi.routing.routeHandler
 
-
-/**
- * Created by hadihariri on 28/08/16.
- */
 val indexRoute = routeHandler {
 
     val html = StringBuilder()
