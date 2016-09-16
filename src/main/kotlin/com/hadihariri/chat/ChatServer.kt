@@ -14,7 +14,7 @@ val users = CopyOnWriteArrayList<User>()
 val rooms = CopyOnWriteArrayList<Room>()
 
 class UserListMessage(val type: String = "CLIENT_LIST", val body: List<String>)
-
+class RoomListMessage(val type: String = "ROOM_LIST", val body: List<String>)
 data class User(val username: String = "", val context: Channel)
 data class Post(val from: String, val body: String)
 data class Room(val title: String, val posts: List<Post>)
@@ -36,11 +36,11 @@ val chatServer = channelHandler {
         val message = parseIncomingMessage(it?.text() ?: "{}")
         when (message) {
             is IncomingSocketMessage.ConnectMessage -> {
-                users.firstOrNull() { it.username.compareTo(message.username, true) == 0 }?.let {
+                if (users.find { it.username.compareTo(message.username, true) == 0 } == null)  {
                     users.add(User(message.username, ctx?.channel()!!))
                 }
                 broadcastMessage(UserListMessage(body = users.map { it.username }).toJSON())
-                response.frame = TextWebSocketFrame("")
+                response.frame = TextWebSocketFrame(RoomListMessage(body = rooms.map { it.title }).toJSON())
             }
         }
     }

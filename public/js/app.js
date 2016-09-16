@@ -37,7 +37,7 @@ class ChatClient {
                 rooms: {
                     dom: '#rooms',
                     transform: (value) => `
-                        <li><a href="${value.id}">${value.title}</a></li>
+                        <li><a href="${value}">${value}</a></li>
 `
                 }
             });
@@ -78,7 +78,7 @@ class ChatClient {
         switch (message.type) {
             case "CLIENT_LIST":
                 return this.listUsers(message);
-            case "ROOMS_LIST":
+            case "ROOM_LIST":
                 return this.listRooms(message);
             case "ROOM_POSTS":
                 return this.listPosts(message);

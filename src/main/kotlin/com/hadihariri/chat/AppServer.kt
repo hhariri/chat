@@ -12,6 +12,7 @@ fun main(args: Array<String>) {
     server.serveStaticFilesFromFolder("public")
     server.get("/index", indexRoute)
     server.channel("/chat", chatServer)
+    rooms.add(Room("General", emptyList()))
     println("Starting server")
     server.start(true)
 }

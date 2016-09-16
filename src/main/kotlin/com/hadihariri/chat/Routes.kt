@@ -22,14 +22,17 @@ val indexRoute = routeHandler {
                             id = "header"
                             h4 { +"Chat" }
                             div {
-                                em {
+                                b {
                                     id = "username"
                                 }
                             }
                         }
+                        h5 { +"Users" }
                         ul("nav nav-sidebar") {
                             id = "users"
                         }
+                        p {}
+                        h5 { +"Rooms" }
                         ul("nav nav-sidebar") {
                             id = "rooms"
                         }
