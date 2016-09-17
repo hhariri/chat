@@ -4,7 +4,6 @@ import org.wasabifx.wasabi.app.AppServer
 import org.wasabifx.wasabi.interceptors.enableCORSGlobally
 import org.wasabifx.wasabi.interceptors.enableContentNegotiation
 import org.wasabifx.wasabi.interceptors.serveStaticFilesFromFolder
-import java.util.concurrent.CopyOnWriteArrayList
 
 fun main(args: Array<String>) {
     val server = AppServer()

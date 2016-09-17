@@ -71,9 +71,6 @@ class ChatClient {
     }
 
     onMessage(event) {
-        // Dispatch incoming events to ChatClient methods based on
-        // the message "type"
-
         let message = JSON.parse(event.data);
         switch (message.type) {
             case "CLIENT_LIST":
