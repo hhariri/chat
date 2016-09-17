@@ -86,7 +86,7 @@ class ChatClient {
     }
 
     listUsers(message) {
-        this.model.users = message.body;
+        this.model.users = message.body.filter ( username => username != this.model.username);
     }
 
     listRooms(message) {

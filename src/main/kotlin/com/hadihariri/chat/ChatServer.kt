@@ -42,7 +42,7 @@ val chatServer = channelHandler {
                 if (users.find { it.username.compareTo(message.username, true) == 0 } == null) {
                     users.add(User(message.username, ctx?.channel()!!))
                 }
-                broadcastMessage(UserListMessage(body = users.filter { it.username.compareTo(message.username) != 0 }.map { it.username }).toJSON())
+                broadcastMessage(UserListMessage(body = users.map { it.username }).toJSON())
                 response.frame = TextWebSocketFrame(RoomListMessage(body = rooms).toJSON())
             }
             is IncomingSocketMessage.AddRoomMessage -> {

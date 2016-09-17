@@ -18,15 +18,6 @@ val indexRoute = routeHandler {
             div("container") {
                 div("row") {
                     div("col-md-2 sidebar") {
-                        div {
-                            id = "header"
-                            h4 { +"Chat" }
-                            div {
-                                b {
-                                    id = "username"
-                                }
-                            }
-                        }
                         h5 { +"Users" }
                         ul("nav nav-sidebar") {
                             id = "users"
