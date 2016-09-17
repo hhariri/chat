@@ -115,14 +115,23 @@ class ChatClient {
 
     addPost() {
         // If the form field is empty, don't add a post
+        let to = ""
+        if (this.model.currentRoom.id.charAt(0) == "@") {
+            to = this.model.currentRoom.id.substring(this.model.currentRoom.id.indexOf("#"))
+        }
         if (this.model.newPost) {
             let obj = {
                 type: "ADD_POST", body: this.model.newPost,
-                roomId: this.model.currentRoom.id, from: this.model.username
+                roomId: this.model.currentRoom.id, from: this.model.username, to: to
             };
             this.socket.send(JSON.stringify(obj));
             this.model.newPost = "";
         }
+    }
+
+    setPeerChat(targetUser) {
+        console.log("Starting peer chat")
+        this.socket.send(JSON.stringify({ type: "GET_PEER", from: this.model.username, to: targetUser}))
     }
 }
 
@@ -152,4 +161,9 @@ document.addEventListener("DOMContentLoaded", () => {
         chat.addPost();
     });
 
+    // Handle clicking on a user
+    document.querySelector('#users').addEventListener("click", (event) => {
+        event.preventDefault();
+        chat.setPeerChat(event.target.getAttribute("href"))
+    })
 });

@@ -13,9 +13,8 @@ fun main(args: Array<String>) {
     server.serveStaticFilesFromFolder("public")
     server.get("/index", indexRoute)
     server.channel("/chat", chatServer)
-    val posts = CopyOnWriteArrayList<Post>()
-    posts.add(Post("hadi", "This is a first message"))
-    rooms.add(Room(title = "General", posts = posts))
+    rooms.add(Room(title = "general"))
+    rooms.add(Room(title = "random"))
     println("Starting server")
     server.start(true)
 }
