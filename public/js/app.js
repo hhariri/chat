@@ -6,7 +6,7 @@ class ChatClient {
         this.model = Bind(
             // First argument is the data model
             {
-                allUsers: [],
+                users: [],
                 username: userName,
                 userId: null,
                 currentRoom: {title: "", posts: []},
@@ -17,7 +17,7 @@ class ChatClient {
             // Second argument maps data items in that model
             // to stuff in the DOM
             {
-                allUsers: {
+                users: {
                     dom: '#users',
                     transform: (value) => `<li><a href="${value}">${value}<a/></li>`
                 },
@@ -37,7 +37,7 @@ class ChatClient {
                 rooms: {
                     dom: '#rooms',
                     transform: (value) => `
-                        <li><a href="${value}">${value}</a></li>
+                        <li><a href="${value.id}">${value.title}</a></li>
 `
                 }
             });
@@ -86,7 +86,7 @@ class ChatClient {
     }
 
     listUsers(message) {
-        this.model.allUsers = message.body;
+        this.model.users = message.body;
     }
 
     listRooms(message) {
