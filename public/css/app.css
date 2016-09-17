@@ -11,7 +11,8 @@
     border-right: 1px solid #eee;
 
     /*Additions*/
-    background-color: rgba(129, 138, 145, 1);
+    color: floralwhite;
+    background-color: #4c394c;
 }
 
 #header {
@@ -41,5 +42,5 @@
 }
 
 .nav-sidebar li a {
-    color: #373a3c;
+    color: whitesmoke;
 }
