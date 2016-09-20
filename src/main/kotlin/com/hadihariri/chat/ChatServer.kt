@@ -11,6 +11,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 
 val users = CopyOnWriteArrayList<User>()
 val rooms = CopyOnWriteArrayList<Room>()
+fun forTheRoom(roomId: String, action: (Room) -> Unit) = rooms.find { it.id equalsIgnoreCase roomId }?.let { action(it) }
 
 class UserListMessage(val type: String = "CLIENT_LIST", val body: List<String>)
 class RoomListMessage(val type: String = "ROOM_LIST", val body: List<Room>)
@@ -52,12 +53,12 @@ val chatServer = channelHandler {
             response.frame = TextWebSocketFrame("")
         }
         is GetRoomMessage -> {
-            rooms.firstOrNull { it.id equalsIgnoreCase message.roomId }?.let {
+            forTheRoom(message.roomId) {
                 response.frame = TextWebSocketFrame(RoomPostsMessage(body = it).toJSON())
             }
         }
         is AddPostMessage -> {
-            rooms.firstOrNull { it.id equalsIgnoreCase message.roomId }?.let {
+            forTheRoom(message.roomId) {
                 it.posts.add(Post(message.from, message.body))
                 if (message.roomId.contains("#")) {
                     sendMessage(message.from, RoomPostsMessage(body = it).toJSON())
