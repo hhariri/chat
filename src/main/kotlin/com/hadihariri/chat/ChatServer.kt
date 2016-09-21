@@ -2,26 +2,28 @@ package com.hadihariri.chat
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
+import com.hadihariri.chat.IncomingSocketMessage.*
 import io.netty.channel.Channel
-import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame
-import io.netty.handler.codec.http.websocketx.WebSocketFrame
 import org.joda.time.DateTime
 import org.wasabifx.wasabi.protocol.websocket.channelHandler
-import java.net.Socket
 import java.util.concurrent.CopyOnWriteArrayList
 
 val users = CopyOnWriteArrayList<User>()
 val rooms = CopyOnWriteArrayList<Room>()
+fun forTheRoom(roomId: String, action: (Room) -> Unit) = rooms.find { it.id equalsIgnoreCase roomId }?.let { action(it) }
 
 class UserListMessage(val type: String = "CLIENT_LIST", val body: List<String>)
 class RoomListMessage(val type: String = "ROOM_LIST", val body: List<Room>)
 class RoomPostsMessage(val type: String = "ROOM_POSTS", val body: Room)
 
-data class User(val username: String = "", val context: Channel)
+data class User(val username: String, val context: Channel)
 data class Post(val from: String, val body: String)
-data class Room(val id: String = DateTime.now().millisOfDay.toString(), val title: String, val posts: CopyOnWriteArrayList<Post> = CopyOnWriteArrayList())
-
+data class Room(
+        val id: String = DateTime.now().millisOfDay.toString(),
+        val title: String,
+        val posts: CopyOnWriteArrayList<Post> = CopyOnWriteArrayList()
+)
 
 sealed class IncomingSocketMessage {
     class ConnectMessage(val username: String) : IncomingSocketMessage()
@@ -32,65 +34,60 @@ sealed class IncomingSocketMessage {
     class GetPeerMessage(val from: String, val to: String) : IncomingSocketMessage()
 }
 
-
 val chatServer = channelHandler {
 
-    (frame as? TextWebSocketFrame).let {
-        val message = parseIncomingMessage(it?.text() ?: "{}")
-        when (message) {
-            is IncomingSocketMessage.ConnectMessage -> {
-                if (users.find { it.username.compareTo(message.username, true) == 0 } == null) {
-                    users.add(User(message.username, ctx?.channel()!!))
-                }
-                broadcastMessage(UserListMessage(body = users.map { it.username }).toJSON())
-                response.frame = TextWebSocketFrame(RoomListMessage(body = rooms).toJSON())
+    val message = parseIncomingMessage((frame as? TextWebSocketFrame)?.text() ?: "{}")
+    when (message) {
+        is ConnectMessage -> {
+            if (users.none { it.username equalsIgnoreCase message.username }) {
+                users.add(User(message.username, ctx?.channel()!!))
             }
-            is IncomingSocketMessage.AddRoomMessage -> {
-                if (rooms.find { it.title.compareTo(message.title, true) == 0 } == null) {
-                    rooms.add(Room(title = message.title))
-                }
-                broadcastMessage(RoomListMessage(body = rooms).toJSON())
-                response.frame = TextWebSocketFrame("")
+            broadcastMessage(UserListMessage(body = users.map { it.username }).toJSON())
+            response.frame = TextWebSocketFrame(RoomListMessage(body = rooms).toJSON())
+        }
+        is AddRoomMessage -> {
+            if (rooms.none { it.title equalsIgnoreCase message.title }) {
+                rooms.add(Room(title = message.title))
             }
-            is IncomingSocketMessage.GetRoomMessage -> {
-                rooms.firstOrNull { it.id.compareTo(message.roomId) == 0 }?.let {
-                    response.frame = TextWebSocketFrame(RoomPostsMessage(body = it).toJSON())
-                }
-            }
-            is IncomingSocketMessage.AddPostMessage -> {
-                rooms.firstOrNull { it.id.compareTo(message.roomId) == 0 }?.let {
-                    it.posts.add(Post(message.from, message.body))
-                    if (message.roomId.contains("#")) {
-                        sendMessage(message.from, RoomPostsMessage(body = it).toJSON())
-                        sendMessage(message.to, RoomPostsMessage(body = it).toJSON())
-                    } else {
-                        broadcastMessage(RoomPostsMessage(body = it).toJSON())
-                    }
-                    response.frame = TextWebSocketFrame("")
-                }
-            }
-            is IncomingSocketMessage.GetPeerMessage -> {
-                val roomName = "@${message.from}#${message.to}"
-                val roomNameAlt = "@${message.to}#${message.from}"
-                val room = rooms.find { it.id.compareTo(roomName) == 0 || it.id.compareTo(roomNameAlt) == 0 }
-                if (room != null)
-                {
-                    response.frame = TextWebSocketFrame(RoomPostsMessage(body = room).toJSON())
-                } else {
-                    rooms.add(Room(id = roomName, title = message.to))
-                    response.frame = TextWebSocketFrame("")
-                }
-            }
-            else -> {
-                response.frame = TextWebSocketFrame("ERROR: Invalid Message")
+            broadcastMessage(RoomListMessage(body = rooms).toJSON())
+            response.frame = TextWebSocketFrame("")
+        }
+        is GetRoomMessage -> {
+            forTheRoom(message.roomId) {
+                response.frame = TextWebSocketFrame(RoomPostsMessage(body = it).toJSON())
             }
         }
+        is AddPostMessage -> {
+            forTheRoom(message.roomId) {
+                it.posts.add(Post(message.from, message.body))
+                if (message.roomId.contains("#")) {
+                    sendMessage(message.from, RoomPostsMessage(body = it).toJSON())
+                    sendMessage(message.to, RoomPostsMessage(body = it).toJSON())
+                } else {
+                    broadcastMessage(RoomPostsMessage(body = it).toJSON())
+                }
+                response.frame = TextWebSocketFrame("")
+            }
+        }
+        is GetPeerMessage -> {
+            val roomName = "@${message.from}#${message.to}"
+            val roomNameAlt = "@${message.to}#${message.from}"
+            val room = rooms.find { it.id == roomName || it.id == roomNameAlt }
+            if (room != null) {
+                response.frame = TextWebSocketFrame(RoomPostsMessage(body = room).toJSON())
+            } else {
+                rooms.add(Room(id = roomName, title = message.to))
+                response.frame = TextWebSocketFrame("")
+            }
+        }
+        else -> {
+            response.frame = TextWebSocketFrame("ERROR: Invalid Message")
+        }
     }
-
 }
 
 fun sendMessage(username: String, message: String) {
-    users.find { it.username == username}?.let {
+    users.find { it.username == username }?.let {
         it.context.writeAndFlush(TextWebSocketFrame(message))
     }
 }
@@ -105,18 +102,18 @@ fun broadcastMessage(message: String) {
 
 fun parseIncomingMessage(messageText: String): IncomingSocketMessage {
     val node = ObjectMapper().readValue(messageText, ObjectNode::class.java)
-    if (node.has("type")) {
-        val type = node.get("type").asText()
-        when (type) {
-            "CONNECT" -> return IncomingSocketMessage.ConnectMessage(node.get("username").asText())
-            "ADD_ROOM" -> return IncomingSocketMessage.AddRoomMessage(node.get("title").asText())
-            "GET_ROOM" -> return IncomingSocketMessage.GetRoomMessage(node.get("roomId").asText())
-            "ADD_POST" -> return IncomingSocketMessage.AddPostMessage(node.get("roomId").asText(), node.get("body").asText(), node.get("from").asText(), node.get("to").asText())
-            "GET_PEER" -> return IncomingSocketMessage.GetPeerMessage(node.get("from").asText(), node.get("to").asText())
-            else -> IncomingSocketMessage.InvalidIncomingMessage("Invalid Message Type")
-        }
+    if (!node.has("type")) return InvalidIncomingMessage("Invalid Message Format")
+
+    val type = node.get("type").asText()
+    return when (type) {
+        "CONNECT" -> ConnectMessage(node["username"].asText())
+        "ADD_ROOM" -> AddRoomMessage(node["title"].asText())
+        "GET_ROOM" -> GetRoomMessage(node["roomId"].asText())
+        "ADD_POST" -> AddPostMessage(node["roomId"].asText(),
+                node["body"].asText(), node["from"].asText(), node["to"].asText())
+        "GET_PEER" -> GetPeerMessage(node["from"].asText(), node["to"].asText())
+        else -> InvalidIncomingMessage("Invalid Message Type")
     }
-    return IncomingSocketMessage.InvalidIncomingMessage("Invalid Message Format")
 }
 
 
